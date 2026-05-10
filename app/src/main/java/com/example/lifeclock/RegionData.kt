@@ -1,13 +1,33 @@
 package com.example.lifeclock
 
+// 地区数据结构：名称 + 子级地区列表
 data class Region(
-    val name: String,
-    val children: List<Region> = emptyList()
+    val name: String,                          // 地区名称
+    val children: List<Region> = emptyList()   // 子级地区列表（省份→城市）
 )
 
+// 中国地区数据：国家→省份→城市三级结构 + 各省上年度在岗职工月平均工资（2024年估算，单位：元）
 object RegionData {
+    // 各省/直辖市上年度在岗职工月平均工资（用于养老金计算）
+    val provinceAvgSalary: Map<String, Float> = mapOf(
+        "北京市" to 13500f, "上海市" to 12500f, "天津市" to 8500f, "重庆市" to 7500f,
+        "河北省" to 6200f, "山西省" to 6000f, "内蒙古" to 7000f,
+        "辽宁省" to 6500f, "吉林省" to 6000f, "黑龙江省" to 5800f,
+        "江苏省" to 9000f, "浙江省" to 9000f, "安徽省" to 6800f,
+        "福建省" to 7500f, "江西省" to 6200f, "山东省" to 7500f,
+        "河南省" to 6000f, "湖北省" to 7000f, "湖南省" to 6500f,
+        "广东省" to 9500f, "广西" to 6200f, "海南省" to 7000f,
+        "四川省" to 7000f, "贵州省" to 6200f, "云南省" to 6500f,
+        "西藏" to 9000f, "陕西省" to 6800f, "甘肃省" to 5800f,
+        "青海省" to 7000f, "宁夏" to 6500f, "新疆" to 6800f,
+        "台湾省" to 10000f, "香港特别行政区" to 18000f, "澳门特别行政区" to 15000f
+    )
+
+    // 获取某省份的月平均工资（找不到则返回全国估算值7500）
+    fun getProvinceSalary(province: String): Float = provinceAvgSalary[province] ?: 7500f
     val regions: List<Region> = listOf(
         Region("中国", listOf(
+            // === 直辖市 ===
             Region("北京市", listOf(
                 Region("东城区"), Region("西城区"), Region("朝阳区"), Region("丰台区"),
                 Region("石景山区"), Region("海淀区"), Region("门头沟区"), Region("房山区"),
@@ -38,6 +58,7 @@ object RegionData {
                 Region("巫山县"), Region("巫溪县"), Region("石柱县"), Region("秀山县"),
                 Region("酉阳县"), Region("彭水县")
             )),
+            // === 省份 ===
             Region("河北省", listOf(
                 Region("石家庄市"), Region("唐山市"), Region("秦皇岛市"), Region("邯郸市"),
                 Region("邢台市"), Region("保定市"), Region("张家口市"), Region("承德市"),
@@ -212,6 +233,7 @@ object RegionData {
                 Region("圣方济各堂区"), Region("路氹城")
             ))
         )),
+        // 预留其他国家
         Region("敬请期待", listOf(
             Region("敬请期待", listOf(Region("敬请期待")))
         ))

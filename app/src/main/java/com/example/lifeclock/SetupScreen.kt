@@ -1,243 +1,223 @@
-package com.example.lifeclock
+package com.example.lifeclock // 应用包名
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import androidx.compose.foundation.BorderStroke // 边框描边
+import androidx.compose.foundation.background // 背景色
+import androidx.compose.foundation.border // 边框修饰符
+import androidx.compose.foundation.clickable // 点击修饰符
+import androidx.compose.foundation.layout.Arrangement // 排列方式
+import androidx.compose.foundation.layout.Column // 垂直布局
+import androidx.compose.foundation.layout.Row // 水平布局
+import androidx.compose.foundation.layout.Spacer // 间距占位
+import androidx.compose.foundation.layout.fillMaxSize // 填充最大尺寸
+import androidx.compose.foundation.layout.fillMaxWidth // 填充最大宽度
+import androidx.compose.foundation.layout.height // 固定高度
+import androidx.compose.foundation.layout.padding // 内边距
+import androidx.compose.foundation.layout.width // 固定宽度
+import androidx.compose.foundation.shape.RoundedCornerShape // 圆角形状
+import androidx.compose.material3.Button // 按钮组件
+import androidx.compose.material3.ButtonDefaults // 按钮默认样式
+import androidx.compose.material3.MaterialTheme // Material3主题
+import androidx.compose.material3.Text // 文本组件
+import androidx.compose.runtime.Composable // Composable标记
+import androidx.compose.runtime.getValue // 委托属性读取
+import androidx.compose.runtime.mutableStateOf // 可观察状态
+import androidx.compose.runtime.remember // 跨重组记忆
+import androidx.compose.runtime.setValue // 委托属性写入
+import androidx.compose.ui.Alignment // 对齐方式
+import androidx.compose.ui.Modifier // UI修饰符
+import androidx.compose.ui.draw.clip // 裁剪
+import androidx.compose.ui.graphics.Color // 颜色
+import androidx.compose.ui.platform.LocalContext // 获取上下文
+import androidx.compose.ui.text.font.FontWeight // 字体粗细
+import androidx.compose.ui.text.style.TextAlign // 文本对齐
+import androidx.compose.ui.unit.dp // dp单位
+import androidx.compose.ui.unit.sp // sp单位
+import java.time.LocalDate // Java日期
+import java.time.format.DateTimeFormatter // 日期格式化
 
-@OptIn(ExperimentalMaterial3Api::class)
+// 首次安装时的初始设置页面：选择生日、预期寿命和性别
 @Composable
 fun SetupScreen(onSetupComplete: () -> Unit) {
-    val context = LocalContext.current
-    var birthday by remember { mutableStateOf<LocalDate?>(null) }
-    var lifespanText by remember { mutableStateOf("80") }
-    var gender by remember { mutableStateOf<String?>(null) }
-    var showDatePicker by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current                        // 获取上下文
+    var birthday by remember { mutableStateOf<LocalDate?>(null) } // 选中的生日（null=未选）
+    var lifespan by remember { mutableStateOf(80f) }           // 选中的预期寿命（默认80）
+    var gender by remember { mutableStateOf<String?>(null) }    // 选中的性别（null=未选）
+    var showBirthdayDialog by remember { mutableStateOf(false) } // 生日选择弹窗可见性
+    var showLifespanDialog by remember { mutableStateOf(false) } // 寿命选择弹窗可见性
+    var errorMessage by remember { mutableStateOf<String?>(null) } // 错误提示文字
 
-    val datePickerState = rememberDatePickerState()
-    val dateFormatter = DateTimeFormatter.ofPattern("yyyy年MM月dd日")
+    val dateFormatter = DateTimeFormatter.ofPattern("yyyy年MM月dd日") // 日期显示格式
 
-    if (showDatePicker) {
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        birthday = Instant.ofEpochMilli(millis)
-                            .atZone(ZoneId.systemDefault())
-                            .toLocalDate()
-                    }
-                    showDatePicker = false
-                }) {
-                    Text("确认")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text("取消")
-                }
+    // 生日滚动选择器弹窗
+    if (showBirthdayDialog) {
+        BirthdayPickerDialog(
+            currentBirthday = birthday ?: LocalDate.of(2000, 1, 1), // 当前生日或默认1990-01-01
+            onDismiss = { showBirthdayDialog = false },              // 关闭弹窗
+            onConfirm = { newDate ->                                 // 确认选择
+                birthday = newDate                                    // 更新生日
+                errorMessage = null                                   // 清除错误
+                showBirthdayDialog = false                            // 关闭弹窗
             }
-        ) {
-            DatePicker(state = datePickerState)
-        }
+        )
+    }
+
+    // 预期寿命滚动选择器弹窗（1-120岁）
+    if (showLifespanDialog) {
+        LifespanPickerDialog(
+            currentLifespan = lifespan,           // 当前寿命值
+            onDismiss = { showLifespanDialog = false },
+            onConfirm = { value ->                // 确认选择
+                lifespan = value                   // 更新寿命
+                errorMessage = null                // 清除错误
+                showLifespanDialog = false         // 关闭弹窗
+            }
+        )
     }
 
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .fillMaxSize()                        // 填充屏幕
+            .padding(32.dp),                      // 四周32dp边距
+        horizontalAlignment = Alignment.CenterHorizontally, // 子项水平居中
+        verticalArrangement = Arrangement.Center             // 子项垂直居中
     ) {
+        // 应用标题
         Text(
             text = "生命时钟",
             fontSize = 36.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.colorScheme.primary,      // 主题色
             textAlign = TextAlign.Center
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // 英文副标题
         Text(
             text = "Life Clock",
             fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = MaterialTheme.colorScheme.onSurfaceVariant, // 次要文字色
             textAlign = TextAlign.Center
         )
 
         Spacer(modifier = Modifier.height(48.dp))
 
-        OutlinedButton(
-            onClick = { showDatePicker = true },
-            modifier = Modifier.fillMaxWidth(0.8f),
-            shape = RoundedCornerShape(12.dp)
+        // 选择生日按钮（点击弹出年月日滚动选择器）
+        Button(
+            onClick = { showBirthdayDialog = true },
+            modifier = Modifier.fillMaxWidth(0.85f).height(52.dp), // 85%宽度，52dp高
+            shape = RoundedCornerShape(12.dp),         // 12dp圆角
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,    // 次要容器色
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer     // 容器上文字色
+            )
         ) {
             Text(
-                text = if (birthday != null) {
-                    "出生日期: ${birthday!!.format(dateFormatter)}"
-                } else {
-                    "选择出生日期"
-                },
+                text = if (birthday != null) "出生日期: ${birthday!!.format(dateFormatter)}" // 已选显示日期
+                else "选择出生日期",                                                          // 未选显示提示
+                fontSize = 16.sp
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // 选择预期寿命按钮（点击弹出1-120滚动选择器）
+        Button(
+            onClick = { showLifespanDialog = true },
+            modifier = Modifier.fillMaxWidth(0.85f).height(52.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        ) {
+            Text(
+                text = "预期寿命: ${lifespan.toInt()} 岁", // 显示当前设定值
                 fontSize = 16.sp
             )
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Gender selection
-        Text(
-            text = "选择性别",
-            fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        // 性别选择标签
+        Text(text = "选择性别", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            GenderChip(
+        // 男女选择chip（蓝色男/粉色女）
+        Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+            GenderChip(                                      // 男性chip
                 label = "♂ 男",
-                selected = gender == UserPreferences.GENDER_MALE,
-                color = Color(0xFF2196F3),
-                onClick = {
-                    gender = UserPreferences.GENDER_MALE
-                    lifespanText = UserPreferences.CHINA_MALE_LIFESPAN.toInt().toString()
-                    errorMessage = null
-                }
+                selected = gender == UserPreferences.GENDER_MALE, // 选中时高亮
+                color = Color(0xFF2196F3),                         // 蓝色
+                onClick = { gender = UserPreferences.GENDER_MALE; errorMessage = null }
             )
             Spacer(modifier = Modifier.width(24.dp))
-            GenderChip(
+            GenderChip(                                      // 女性chip
                 label = "♀ 女",
                 selected = gender == UserPreferences.GENDER_FEMALE,
-                color = Color(0xFFE91E63),
-                onClick = {
-                    gender = UserPreferences.GENDER_FEMALE
-                    lifespanText = UserPreferences.CHINA_FEMALE_LIFESPAN.toInt().toString()
-                    errorMessage = null
-                }
+                color = Color(0xFFE91E63),                         // 粉色
+                onClick = { gender = UserPreferences.GENDER_FEMALE; errorMessage = null }
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = lifespanText,
-            onValueChange = { newValue ->
-                if (newValue.isEmpty() || newValue.all { it.isDigit() }) {
-                    lifespanText = newValue
-                    errorMessage = null
-                }
-            },
-            label = { Text("预期寿命 (岁)") },
-            modifier = Modifier.fillMaxWidth(0.8f),
-            singleLine = true,
-            supportingText = if (errorMessage != null) {
-                { Text(errorMessage!!, color = MaterialTheme.colorScheme.error) }
-            } else null,
-            shape = RoundedCornerShape(12.dp)
-        )
+        // 错误信息显示
+        if (errorMessage != null) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(text = errorMessage!!, fontSize = 13.sp, color = MaterialTheme.colorScheme.error)
+        }
 
         Spacer(modifier = Modifier.height(36.dp))
 
+        // 开始按钮：校验并保存设置，进入主页
         Button(
             onClick = {
-                val lifespan = lifespanText.toIntOrNull()
-                when {
-                    birthday == null -> errorMessage = "请选择出生日期"
-                    gender == null -> errorMessage = "请选择性别"
-                    lifespan == null || lifespan <= 0 -> errorMessage = "请输入有效的预期寿命"
-                    lifespan > 150 -> errorMessage = "预期寿命不能超过150岁"
-                    else -> {
-                        UserPreferences.saveUserData(
-                            context,
-                            birthday.toString(),
-                            lifespan,
-                            gender!!
-                        )
-                        onSetupComplete()
+                when {                                                          // 校验各字段
+                    birthday == null -> errorMessage = "请选择出生日期"           // 未选生日
+                    gender == null -> errorMessage = "请选择性别"                // 未选性别
+                    lifespan <= 0 -> errorMessage = "请输入有效的预期寿命"       // 无效寿命
+                    lifespan > 150 -> errorMessage = "预期寿命不能超过150岁"     // 寿命过大
+                    else -> {                                                   // 校验通过
+                        UserPreferences.saveUserData(                            // 保存所有数据
+                            context, birthday.toString(), lifespan.toInt(), gender!!)
+                        onSetupComplete()                                       // 通知父组件完成设置
                     }
                 }
             },
-            modifier = Modifier
-                .fillMaxWidth(0.8f)
-                .height(52.dp),
+            modifier = Modifier.fillMaxWidth(0.85f).height(52.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary
-            )
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary) // 主色按钮
         ) {
             Text(text = "开始", fontSize = 18.sp)
         }
     }
 }
 
+// 性别选择chip组件（选中时显示彩色边框和背景，未选中时灰色）
 @Composable
 private fun GenderChip(
-    label: String,
-    selected: Boolean,
-    color: Color,
-    onClick: () -> Unit
+    label: String,       // 显示文字
+    selected: Boolean,   // 是否选中
+    color: Color,        // 主题色
+    onClick: () -> Unit  // 点击回调
 ) {
-    val borderColor = if (selected) color else Color.Gray
-    val bgColor = if (selected) color.copy(alpha = 0.15f) else Color.Transparent
+    val borderColor = if (selected) color else Color.Gray                    // 选中彩色边框，未选中灰色
+    val bgColor = if (selected) color.copy(alpha = 0.15f) else Color.Transparent // 选中半透明背景
 
     Row(
         modifier = Modifier
-            .clip(RoundedCornerShape(24.dp))
-            .border(BorderStroke(2.dp, borderColor), RoundedCornerShape(24.dp))
-            .background(bgColor, RoundedCornerShape(24.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 28.dp, vertical = 12.dp),
+            .clip(RoundedCornerShape(24.dp))                                 // 24dp圆角裁剪
+            .border(BorderStroke(2.dp, borderColor), RoundedCornerShape(24.dp)) // 2dp边框
+            .background(bgColor, RoundedCornerShape(24.dp))                  // 圆角背景
+            .clickable(onClick = onClick)                                    // 点击事件
+            .padding(horizontal = 28.dp, vertical = 12.dp),                 // 内边距
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = label,
+            text = label,                                                    // "♂ 男"或"♀ 女"
             fontSize = 18.sp,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-            color = if (selected) color else Color.Gray
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal, // 选中加粗
+            color = if (selected) color else Color.Gray                       // 选中彩色
         )
     }
 }
